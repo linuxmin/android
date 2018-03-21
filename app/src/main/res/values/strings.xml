@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">HartmannYAWA</string>
+    <string name="name_matrikelnr">Benjamin Hartmann 0915812</string> <!-- Name + Matrnr -->
+    <string name="choose_city">Choose a City:</string> <!-- Label for Dropdown List -->
+    <string name="get_forecast">Get 5-Day Forecast!</string>
+    <string-array name="city_array">   <!--Predefined List of cities for dropdown list  -->
+        <item>Vienna</item>
+        <item>Salzburg</item>
+        <item>Innsbruck</item>
+    </string-array>
+</resources>

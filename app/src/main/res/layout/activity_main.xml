@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="at.ac.univie.hci.hartmannyawa.MainActivity"
+    tools:layout_editor_absoluteY="81dp">
+
+    <TextView
+        android:id="@+id/text_name_matrikelnr"
+        android:layout_width="192dp"
+        android:layout_height="31dp"
+        android:layout_marginBottom="117dp"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="55dp"
+        android:text="@string/name_matrikelnr"
+        app:layout_constraintBottom_toTopOf="@+id/text_choose"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/spinner_city"
+        android:layout_width="267dp"
+        android:layout_height="29dp"
+        android:layout_marginBottom="22dp"
+        android:entries="@array/city_array"
+        app:layout_constraintBottom_toTopOf="@+id/btn_get_forecast"
+        app:layout_constraintEnd_toEndOf="@+id/text_choose"
+        app:layout_constraintHorizontal_bias="0.475"
+        app:layout_constraintStart_toEndOf="@+id/text_choose"
+        app:layout_constraintTop_toBottomOf="@+id/text_choose" />
+
+    <TextView
+        android:id="@+id/text_choose"
+        android:layout_width="142dp"
+        android:layout_height="35dp"
+        android:layout_marginBottom="17dp"
+        android:layout_marginStart="44dp"
+        android:text="@string/choose_city"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/spinner_city"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_name_matrikelnr" />
+
+    <Button
+        android:id="@+id/btn_get_forecast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="174dp"
+        android:text="@string/get_forecast"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/spinner_city"
+        app:layout_constraintTop_toBottomOf="@+id/spinner_city" />
+
+</android.support.constraint.ConstraintLayout>
