@@ -31,7 +31,9 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'org.springframework.android:spring-android-rest-template:1.0.1.RELEASE' //Spring for Android
+    implementation 'com.android.support:design:26.1.0'
+    compile 'org.springframework.android:spring-android-rest-template:1.0.1.RELEASE'
+    //Spring for Android
     compile 'com.fasterxml.jackson.core:jackson-databind:2.8.10' //JSON Parser
     compile 'com.survivingwithandroid:weatherlib:1.6.0'  //weatherlib
     testImplementation 'junit:junit:4.12'
