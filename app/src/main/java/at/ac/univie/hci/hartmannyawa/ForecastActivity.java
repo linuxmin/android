@@ -1,6 +1,8 @@
 package at.ac.univie.hci.hartmannyawa;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.widget.TableRow;
@@ -25,19 +27,19 @@ import java.util.Date;
 import java.util.List;
 
 public class ForecastActivity extends Activity {
-
+    Context context = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String id, city = null;
         setContentView(R.layout.activity_forecast);
+        context = getApplication();
         /*
         getting the city_id and the city_name from the main activity
          */
+
         id = getIntent().getExtras().getString("id");
         city = getIntent().getExtras().getString("city");
-        TextView textCity = (TextView) findViewById(R.id.text_city);
-        textCity.setText(city);
 
         /*
         getting a new WeatherClient Builder (factory) and
@@ -50,7 +52,7 @@ public class ForecastActivity extends Activity {
          */
         weatherConfig.ApiKey = "2140445c086ba33a6ec6319cc1208765";
         weatherConfig.unitSystem = WeatherConfig.UNIT_SYSTEM.M;
-        weatherConfig.numDays = 5;
+    //    weatherConfig.numDays = 5;
 
         //create the weatherclient
         try {
@@ -65,7 +67,8 @@ public class ForecastActivity extends Activity {
                 */
                 @Override
                 public void onWeatherRetrieved(WeatherHourForecast forecast) {
-                    List<HourForecast> hourlist = forecast.getHourForecast(); // List of 40 Forecasts, 1 for every 3 hours
+                    List<HourForecast> hourlist = forecast.getHourForecast(); // List of Forecasts, 1 for every 3 hours
+                    System.out.println(hourlist.size()); //could be 37 in special cases??
                     /*
                     To seperate the results from each day, the position of the last entry of one day
                     must be known
@@ -97,43 +100,34 @@ public class ForecastActivity extends Activity {
                     using the method calc_temperatures to get the final avg,min,max temperatures
                     for each day as an array of double values in the order avg,min,max.
                      */
-                    Double[] result_one = calc_temperatures(one);
-                    Double[] result_two = calc_temperatures(two);
-                    Double[] result_three = calc_temperatures(three);
-                    Double[] result_four = calc_temperatures(four);
-                    Double[] result_five = calc_temperatures(five);
-
+                    double[] result_one = calc_temperatures(one);
+                    double[] result_two = calc_temperatures(two);
+                    double[] result_three = calc_temperatures(three);
+                    double[] result_four = calc_temperatures(four);
+                    double[] result_five = calc_temperatures(five);
+/*/
                     List<Double[]> list = new ArrayList<>();
                     list.add(calc_temperatures(one));
                     list.add(calc_temperatures(two));
                     list.add(calc_temperatures(three));
                     list.add(calc_temperatures(four));
                     list.add(calc_temperatures(five));
-                    int i=1;
-                    DecimalFormat formatter = new DecimalFormat("0.##");
-                    int id = getResources().getIdentifier("row" + String.valueOf(i), "id", "at.ac.univie.hci.hartmannyawa");
-                  TextView b;
-                   b = (TextView) findViewById(R.id.avg0);
-                    TableRow row;
-                    row = (TableRow) findViewById(id);
-                    row.addView(b);
-                    for(Double[] results : list){
-                        for(int l=0;l<3;l++){
-                        }
-                    }
+/*/
+                    Intent intent = new Intent(context, TabbedForecast.class);
+                    intent.putExtra("one",result_one);
+                    intent.putExtra("two",result_two);
+                    intent.putExtra("three", result_three);
+                    intent.putExtra("four", result_four);
+                    intent.putExtra("five",result_five);
+                    startActivity(intent);
 
+                   // DecimalFormat formatter = new DecimalFormat("0.##");
 
                     /*
                     Decimal Format used to format the result, should only show 2 numbers after comma
                      */
 
-                    String avgstring = formatter.format(result_one[0]);
-               //     b.setText(avgstring);
-                  //  System.out.println("Min: " + result_one[1]);
-                   // System.out.println("Max: " + result_one[2]);
-
-
-
+                   // String avgstring = formatter.format(result_one[0]);
 
                 }
                 /*
@@ -160,7 +154,7 @@ public class ForecastActivity extends Activity {
     method that calculates min,max and avg temperatures out of a HoureForecast List
     it returns an array of 3 double values (avg, min, max)
      */
-    public Double[] calc_temperatures(List<HourForecast> hourForecastList){
+    public double[] calc_temperatures(List<HourForecast> hourForecastList){
         int i=0;
         double avgtemp = 0.0;
         double mintemp = 0.0;
@@ -171,7 +165,7 @@ public class ForecastActivity extends Activity {
          */
         double prev_min =+100.0;
         double prev_max =-100.0;
-        Double [] array_result = new Double[3];
+        double [] array_result = new double[3];
         for(HourForecast hourForecast : hourForecastList){
             mintemp = hourForecast.weather.temperature.getMinTemp();
             maxtemp = hourForecast.weather.temperature.getMaxTemp();

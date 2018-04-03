@@ -12,4 +12,10 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="title_activity_tabbed_forecast">Forecast for %1$s</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Temperatures Day %1$d</string>
+    <string name="smax">Maximum</string>
+    <string name="smin">Minimum</string>
+    <string name="savg">Average</string>
 </resources>
