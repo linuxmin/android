@@ -19,7 +19,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ForecastActivity" />
         <activity
             android:name=".TabbedForecast"
             android:label="@string/title_activity_tabbed_forecast"></activity>

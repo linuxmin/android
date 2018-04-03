@@ -104,15 +104,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
                  */
                 @Override
                 public void onWeatherRetrieved(WeatherHourForecast forecast) {
-                    List<HourForecast> hourlist = forecast.getHourForecast(); // List of Forecasts, 1 for every 3 hours
-                    System.out.println(hourlist.size()); //could be 37 in special cases??
+                    List<HourForecast> hourlist = forecast.getHourForecast();
+                    /*
+                    List of Forecasts, 1 for every 3 hours should contain 40 items but I
+                    encountered different values, so I take hourlist.size.
+
+                    */
+                    int forecasts = hourlist.size();
                     /*
                     To seperate the results from each day, the position of the last entry of one day
                     must be known
                      */
                     int[] j = new int[5];  //int Array to save last position of day
                     int k=0;
-                    for(int i=0; i<39; i++){
+                    for(int i=0; i<(forecasts-1); i++){
                         long timestampnow = hourlist.get(i).timestamp;
                         Date datenow = new Date(timestampnow*1000);         //date entry actual pos
                         long timestampthen = hourlist.get(i+1).timestamp;
@@ -125,13 +130,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     /*
                     Now we can split the original List into 5 "daily" Lists using sublist(from,to)
                     and the known last positions of the days. +1 to begin the next day, actual
-                    day must not be part ot it, day five ends at position 40.
+                    day must not be part ot it, day five ends at position 40(usually).
                      */
                     List<HourForecast> one = hourlist.subList(j[0]+1,j[1]+1);
                     List<HourForecast> two = hourlist.subList(j[1]+1,j[2]+1);
                     List<HourForecast> three = hourlist.subList(j[2]+1,j[3]+1);
                     List<HourForecast> four = hourlist.subList(j[3]+1,j[4]+1);
-                    List<HourForecast> five = hourlist.subList(j[4]+1,40);
+                    List<HourForecast> five = hourlist.subList(j[4]+1,forecasts);
 
                     /*
                     using the method calc_temperatures to get the final avg,min,max temperatures
@@ -142,14 +147,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     double[] result_three = calc_temperatures(three);
                     double[] result_four = calc_temperatures(four);
                     double[] result_five = calc_temperatures(five);
-/*/
-                    List<Double[]> list = new ArrayList<>();
-                    list.add(calc_temperatures(one));
-                    list.add(calc_temperatures(two));
-                    list.add(calc_temperatures(three));
-                    list.add(calc_temperatures(four));
-                    list.add(calc_temperatures(five));
-/*/
+
                     Intent intent = new Intent(context, TabbedForecast.class);
                     intent.putExtra("one",result_one);
                     intent.putExtra("two",result_two);
@@ -158,14 +156,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     intent.putExtra("five",result_five);
                     intent.putExtra("city",city);
                     startActivity(intent);
-
-                    // DecimalFormat formatter = new DecimalFormat("0.##");
-
-                    /*
-                    Decimal Format used to format the result, should only show 2 numbers after comma
-                     */
-
-                    // String avgstring = formatter.format(result_one[0]);
 
                 }
                 /*
