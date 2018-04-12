@@ -1,7 +1,10 @@
 package at.ac.univie.hci.hartmannyawa;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.DialogFragment;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,6 +26,7 @@ import com.survivingwithandroid.weather.lib.provider.forecastio.ForecastIOProvid
 import com.survivingwithandroid.weather.lib.provider.openweathermap.OpenweathermapProviderType;
 import com.survivingwithandroid.weather.lib.request.WeatherRequest;
 
+import org.joda.time.DateTime;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -82,135 +86,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 break;
             }
         }
-        WeatherClient.ClientBuilder clientBuilder = new WeatherClient.ClientBuilder();
-        WeatherConfig weatherConfig = new WeatherConfig();  //
-        /*
-        Configure the settings like apikey, city id, units used (metric) etc..
-         */
-        weatherConfig.ApiKey = "2140445c086ba33a6ec6319cc1208765";
-        weatherConfig.unitSystem = WeatherConfig.UNIT_SYSTEM.M;
-        //    weatherConfig.numDays = 5;
-
-        //create the weatherclient
-        try {
-            WeatherClient weatherClient =
-                    clientBuilder.attach(this).httpClient(StandardHttpClient.class).provider(new OpenweathermapProviderType())
-                            .config(weatherConfig).build();
-            weatherClient.getHourForecastWeather(new WeatherRequest(id), new WeatherClient.HourForecastWeatherEventListener() {
-
-                /*
-                method names are self-descriptive. this is done when the wheater has been retrieved
-                by the client
-                 */
-                @Override
-                public void onWeatherRetrieved(WeatherHourForecast forecast) {
-                    List<HourForecast> hourlist = forecast.getHourForecast();
-                    /*
-                    List of Forecasts, 1 for every 3 hours should contain 40 items but I
-                    encountered different values, so I take hourlist.size.
-
-                    */
-                    int forecasts = hourlist.size();
-                    /*
-                    To seperate the results from each day, the position of the last entry of one day
-                    must be known
-                     */
-                    int[] j = new int[5];  //int Array to save last position of day
-                    int k=0;
-                    for(int i=0; i<(forecasts-1); i++){
-                        long timestampnow = hourlist.get(i).timestamp;
-                        Date datenow = new Date(timestampnow*1000);         //date entry actual pos
-                        long timestampthen = hourlist.get(i+1).timestamp;
-                        Date datethen = new Date(timestampthen*1000); // date entry next pos
-                        if(datenow.getDay() != datethen.getDay()){         // if days are different
-                            j[k] = i;                                    //save pos in array
-                            ++k;                                         //iterate
-                        }
-                    }
-                    /*
-                    Now we can split the original List into 5 "daily" Lists using sublist(from,to)
-                    and the known last positions of the days. +1 to begin the next day, actual
-                    day must not be part ot it, day five ends at position 40(usually).
-                     */
-                    List<HourForecast> one = hourlist.subList(j[0]+1,j[1]+1);
-                    List<HourForecast> two = hourlist.subList(j[1]+1,j[2]+1);
-                    List<HourForecast> three = hourlist.subList(j[2]+1,j[3]+1);
-                    List<HourForecast> four = hourlist.subList(j[3]+1,j[4]+1);
-                    List<HourForecast> five = hourlist.subList(j[4]+1,forecasts);
-
-                    /*
-                    using the method calc_temperatures to get the final avg,min,max temperatures
-                    for each day as an array of double values in the order avg,min,max.
-                     */
-                    double[] result_one = calc_temperatures(one);
-                    double[] result_two = calc_temperatures(two);
-                    double[] result_three = calc_temperatures(three);
-                    double[] result_four = calc_temperatures(four);
-                    double[] result_five = calc_temperatures(five);
-
-                    Intent intent = new Intent(context, TabbedForecast.class);
-                    intent.putExtra("one",result_one);
-                    intent.putExtra("two",result_two);
-                    intent.putExtra("three", result_three);
-                    intent.putExtra("four", result_four);
-                    intent.putExtra("five",result_five);
-                    intent.putExtra("city",city);
-                    startActivity(intent);
-
-                }
-                /*
-                if there is a WeahterLibException thrown e.g. the apikey is invalid
-                 */
-                @Override
-                public void onWeatherError(WeatherLibException wle) {
-                    wle.printStackTrace();
-                }
-
-                //if there are problems with the connection to the server
-                @Override
-                public void onConnectionError(Throwable t) {
-                    t.printStackTrace();
-                }
-            });
-
-        }catch(Exception e){
-            e.printStackTrace();
-        }
-
-
+        Intent intent = new Intent(context, TabbedForecast.class);
+        intent.putExtra("city",city);
+        intent.putExtra("id", id);
+        startActivity(intent);
 
     }
 
-    public double[] calc_temperatures(List<HourForecast> hourForecastList){
-        int i=0;
-        double avgtemp = 0.0;
-        double mintemp = 0.0;
-        double maxtemp = 0.0;
-        /*
-        to find min and max temperatures, the actual min/max temp is compared to the previous found
-        min/max. to get a start value for min/max, they are instantiated with unreachable min/max values
-         */
-        double prev_min =+100.0;
-        double prev_max =-100.0;
-        double [] array_result = new double[3];
-        for(HourForecast hourForecast : hourForecastList){
-            mintemp = hourForecast.weather.temperature.getMinTemp();
-            maxtemp = hourForecast.weather.temperature.getMaxTemp();
-            if(mintemp < prev_min) {
-                prev_min = mintemp;
-            }
-            if(maxtemp > prev_max){
-                prev_max = maxtemp;
-            }
-            avgtemp = avgtemp + hourForecast.weather.temperature.getTemp();
-            ++i;
-        }
-        avgtemp = avgtemp/i;
-        array_result[0] = avgtemp;
-        array_result[1] = prev_min;
-        array_result[2] = prev_max;
-        return array_result;
-    }
+
 
 
 }

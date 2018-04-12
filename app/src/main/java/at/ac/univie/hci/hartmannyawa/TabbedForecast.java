@@ -3,10 +3,12 @@ package at.ac.univie.hci.hartmannyawa;
 
 import android.app.Activity;
 import android.app.ActionBar;
+import android.app.AlertDialog;
 import android.app.FragmentTransaction;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.DialogInterface;
 import android.support.design.widget.TabLayout;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -19,10 +21,21 @@ import android.view.ViewGroup;
 
 import android.widget.TextView;
 
+import com.survivingwithandroid.weather.lib.StandardHttpClient;
+import com.survivingwithandroid.weather.lib.WeatherClient;
+import com.survivingwithandroid.weather.lib.WeatherConfig;
+import com.survivingwithandroid.weather.lib.exception.WeatherLibException;
+import com.survivingwithandroid.weather.lib.model.HourForecast;
+import com.survivingwithandroid.weather.lib.model.WeatherHourForecast;
+import com.survivingwithandroid.weather.lib.provider.openweathermap.OpenweathermapProviderType;
+import com.survivingwithandroid.weather.lib.request.WeatherRequest;
+
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /*
@@ -47,6 +60,10 @@ public class TabbedForecast extends Activity {
      */
     private ViewPager mViewPager;
 
+    //created some variables here to have access to them later
+    String id = null;
+    Integer pages = 0;
+    List<double[]> resultlist = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +71,74 @@ public class TabbedForecast extends Activity {
         setContentView(R.layout.activity_tabbed_forecast);
         //Setting the title with intents from mainactivity to display the name of forecasted city
         String title = "Forecast for " + getIntent().getExtras().getString("city");
+        id = getIntent().getExtras().getString("id");
         setTitle(title);
+
+        WeatherClient.ClientBuilder clientBuilder = new WeatherClient.ClientBuilder();
+        WeatherConfig weatherConfig = new WeatherConfig();  //
+        /*
+        Configure the settings like apikey, city id, units used (metric) etc..
+         */
+        weatherConfig.ApiKey = "2140445c086ba33a6ec6319cc1208765";
+        weatherConfig.unitSystem = WeatherConfig.UNIT_SYSTEM.M;
+        weatherConfig.numDays = 5;
+
+        //create the weatherclient
+        try {
+            WeatherClient weatherClient =
+                    clientBuilder.attach(this).httpClient(StandardHttpClient.class).provider(new OpenweathermapProviderType())
+                            .config(weatherConfig).build();
+            weatherClient.getHourForecastWeather(new WeatherRequest(id), new WeatherClient.HourForecastWeatherEventListener() {
+
+                /*
+                method names are self-descriptive. this is done when the wheater has been retrieved
+                by the client
+                 */
+                @Override
+                public void onWeatherRetrieved(WeatherHourForecast forecast) {
+                    List<HourForecast> hourlist = forecast.getHourForecast();
+                    List<List<HourForecast>> daylist = new ArrayList<>();
+
+                    //generate seperate forecast lists for each day and store them in anothe list
+                    // i know, a lot of lists here :)
+                    int j = 0;
+                    for(int i=0;i<(hourlist.size()-1);i++){
+                        DateTime now = new DateTime((hourlist.get(i).timestamp)*1000);
+                        DateTime future = new DateTime((hourlist.get(i+1).timestamp)*1000);
+                        if(future.getDayOfWeek() != now.getDayOfWeek()){
+                            daylist.add(hourlist.subList(j,i));
+                            j=i+1;
+                        }
+                    }
+
+                    daylist.add(hourlist.subList(j,hourlist.size()));  // last day has to be added manually
+
+                    pages = daylist.size();
+
+                    for(int i=0; i<pages;i++){
+                        resultlist.add(calc_temperatures(daylist.get(i)));  // storing the results of each day
+                    }
+
+                }
+                /*
+                if there is a WeahterLibException thrown e.g. the apikey is invalid
+                 */
+                @Override
+                public void onWeatherError(WeatherLibException wle) {
+                    wle.printStackTrace();
+                }
+
+                //if there are problems with the connection to the server
+                @Override
+                public void onConnectionError(Throwable t) {
+                    t.printStackTrace();
+                }
+            });
+
+        }catch(Exception e){
+            e.printStackTrace();
+
+        }
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
@@ -66,11 +150,12 @@ public class TabbedForecast extends Activity {
 
 
     }
-
+    // I don't use this so i commented it out.
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_tabbed_forecast, menu);
+
+       // getMenuInflater().inflate(R.menu.menu_tabbed_forecast, menu);
         return true;
     }
 
@@ -117,6 +202,8 @@ public class TabbedForecast extends Activity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
+            TabbedForecast tabbedForecast = (TabbedForecast) getActivity();   // needed to have access to the variables of the activity
+
             View rootView = inflater.inflate(R.layout.fragment_tabbed_forecast, container, false);
             TextView textView = (TextView) rootView.findViewById(R.id.section_label);
             TextView avg = (TextView) rootView.findViewById(R.id.vavg);
@@ -135,6 +222,7 @@ public class TabbedForecast extends Activity {
             lswipe.setText("<-- SWIPE LEFT");
             rswipe.setText("SWIPE RIGHT -->");
 
+
             /*
             using joda time and DateTimeFormatter to show the date of the forecast in the current tab
              */
@@ -143,56 +231,64 @@ public class TabbedForecast extends Activity {
             DateTimeFormatter fmt = DateTimeFormat.forPattern("dd.MM.yyyy");
             DateTimeFormatter germanFmt = fmt.withLocale(Locale.GERMAN);
             String output = null;
-
             switch (getArguments().getInt(ARG_SECTION_NUMBER)){
                 case 1: {
-                    result = getActivity().getIntent().getExtras().getDoubleArray("one");
-                    dt = dt.plusDays(1);
+                    result = tabbedForecast.resultlist.get(0);
                     day.setText(fmt.print(dt));
-                    avg.setText(String.valueOf(result[0]).substring(0,5));
-                    min.setText(String.valueOf(result[1]).substring(0,5));
-                    max.setText(String.valueOf(result[2]).substring(0,5));
+                    avg.setText(String.valueOf(result[0]).substring(0,4));
+                    min.setText(String.valueOf(result[1]).substring(0,4));
+                    max.setText(String.valueOf(result[2]).substring(0,4));
                     lswipe.setText("");  // user cannot swipe left here
                     break;
                 }
                 case 2: {
-                    result = getActivity().getIntent().getExtras().getDoubleArray("two");
-                    dt = dt.plusDays(2);
+                    result = tabbedForecast.resultlist.get(1);
+                    dt = dt.plusDays(1);
                     day.setText(fmt.print(dt));
-                    avg.setText(String.valueOf(result[0]).substring(0,5));
-                    min.setText(String.valueOf(result[1]).substring(0,5));
-                    max.setText(String.valueOf(result[2]).substring(0,5));
+                    avg.setText(String.valueOf(result[0]).substring(0,4));
+                    min.setText(String.valueOf(result[1]).substring(0,4));
+                    max.setText(String.valueOf(result[2]).substring(0,4));
                     break;
                 }
                 case 3: {
-                    result = getActivity().getIntent().getExtras().getDoubleArray("three");
-                    dt = dt.plusDays(3);
+                    result = tabbedForecast.resultlist.get(2);
+                    dt = dt.plusDays(2);
                     day.setText(fmt.print(dt));
-                    avg.setText(String.valueOf(result[0]).substring(0,5));
-                    min.setText(String.valueOf(result[1]).substring(0,5));
-                    max.setText(String.valueOf(result[2]).substring(0,5));
+                    avg.setText(String.valueOf(result[0]).substring(0,4));
+                    min.setText(String.valueOf(result[1]).substring(0,4));
+                    max.setText(String.valueOf(result[2]).substring(0,4));
                     break;
                 }
                 case 4: {
-                    result = getActivity().getIntent().getExtras().getDoubleArray("four");
-                    dt = dt.plusDays(4);
+                    result = tabbedForecast.resultlist.get(3);
+                    dt = dt.plusDays(3);
                     day.setText(fmt.print(dt));
-                    avg.setText(String.valueOf(result[0]).substring(0,5));
-                    min.setText(String.valueOf(result[1]).substring(0,5));
-                    max.setText(String.valueOf(result[2]).substring(0,5));
+                    avg.setText(String.valueOf(result[0]).substring(0,4));
+                    min.setText(String.valueOf(result[1]).substring(0,4));
+                    max.setText(String.valueOf(result[2]).substring(0,4));
                     break;
                 }
                 case 5: {
-                    result = getActivity().getIntent().getExtras().getDoubleArray("five");
-                    dt = dt.plusDays(5);
+                    result = tabbedForecast.resultlist.get(4);
+                    dt = dt.plusDays(4);
                     day.setText(fmt.print(dt));
-                    avg.setText(String.valueOf(result[0]).substring(0,5));
-                    min.setText(String.valueOf(result[1]).substring(0,5));
-                    max.setText(String.valueOf(result[2]).substring(0,5));
+                    avg.setText(String.valueOf(result[0]).substring(0,4));
+                    min.setText(String.valueOf(result[1]).substring(0,4));
+                    max.setText(String.valueOf(result[2]).substring(0,4));
+                    if(tabbedForecast.pages == 5)   //if there is no other day to be shown
                     rswipe.setText("");  // user cannot swipe right here
                     break;
                 }
-
+                case 6: {
+                    result = tabbedForecast.resultlist.get(5);
+                    dt = dt.plusDays(5);
+                    day.setText(fmt.print(dt));
+                    avg.setText(String.valueOf(result[0]).substring(0,4));
+                    min.setText(String.valueOf(result[1]).substring(0,4));
+                    max.setText(String.valueOf(result[2]).substring(0,4));
+                    rswipe.setText("");  // user cannot swipe right here
+                    break;
+                }
             }
             savg.setText(getString(R.string.savg));
             smin.setText(getString(R.string.smin));
@@ -221,8 +317,8 @@ public class TabbedForecast extends Activity {
 
         @Override
         public int getCount() {
-            // Show 5 total pages.
-            return 5;
+            // how many pages there will be based on daylist.size() (number of days in forecast)
+            return pages;
         }
 
         @Override
@@ -237,5 +333,36 @@ public class TabbedForecast extends Activity {
             }
             return null;
         }
+    }
+
+    public double[] calc_temperatures(List<HourForecast> hourForecastList){
+        int i=0;
+        double avgtemp = 0.0;
+        double mintemp = 0.0;
+        double maxtemp = 0.0;
+        /*
+        to find min and max temperatures, the actual min/max temp is compared to the previous found
+        min/max. to get a start value for min/max, they are instantiated with unreachable min/max values
+         */
+        double prev_min =+100.0;
+        double prev_max =-100.0;
+        double [] array_result = new double[3];
+        for(HourForecast hourForecast : hourForecastList){
+            mintemp = hourForecast.weather.temperature.getMinTemp();
+            maxtemp = hourForecast.weather.temperature.getMaxTemp();
+            if(mintemp < prev_min) {
+                prev_min = mintemp;
+            }
+            if(maxtemp > prev_max){
+                prev_max = maxtemp;
+            }
+            avgtemp = avgtemp + hourForecast.weather.temperature.getTemp();
+            ++i;
+        }
+        avgtemp = avgtemp/i;
+        array_result[0] = avgtemp;
+        array_result[1] = prev_min;
+        array_result[2] = prev_max;
+        return array_result;
     }
 }
